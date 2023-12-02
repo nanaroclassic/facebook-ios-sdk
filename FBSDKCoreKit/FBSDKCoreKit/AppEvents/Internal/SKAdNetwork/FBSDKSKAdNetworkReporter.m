@@ -168,6 +168,12 @@ static char *const serialQueueLabel = "com.facebook.appevents.SKAdNetwork.FBSDKS
   if ([self shouldCutoff]) {
     return;
   }
+  if (self.conversionValue > self.configuration.timerBuckets) {
+    return;
+  }
+  if (self.timestamp && [[NSDate date] timeIntervalSinceDate:self.timestamp] < self.configuration.timerInterval) {
+    return;
+  }
   [self _updateConversionValue:self.conversionValue];
 }
 
@@ -227,7 +233,11 @@ static char *const serialQueueLabel = "com.facebook.appevents.SKAdNetwork.FBSDKS
     if ([self shouldCutoff]) {
       return;
     }
-    [self.conversionValueUpdater updateConversionValue:value];
+    if (@available(iOS 15.4, *)) {
+      [self.conversionValueUpdater updatePostbackConversionValue:value completionHandler:nil];
+    } else {
+      [self.conversionValueUpdater updateConversionValue:value];
+    }
     self.conversionValue = value + 1;
     self.timestamp = [NSDate date];
     [self _saveReportData];
